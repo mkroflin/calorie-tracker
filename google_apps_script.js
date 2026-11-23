@@ -16,6 +16,34 @@
  */
 
 function doGet(e) {
+  // Ako je poziv za dodavanje retka hrane: ?action=add&date=...&name=...&qty=...&p=...&c=...&f=...&kcal=...
+  if (e && e.parameter && e.parameter.action === "add") {
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById("1d50JU6jF67O3E-kT6pf3fM-fVy8AjQKN_9d71HzZu_I");
+      const podaciSheet = ss.getSheetByName("Podaci") || ss.getSheets()[0];
+      
+      const date = e.parameter.date || formatDateValue(new Date());
+      const name = e.parameter.name || "";
+      const qty = e.parameter.qty || "1";
+      const p = parseNumericValue(e.parameter.p);
+      const c = parseNumericValue(e.parameter.c);
+      const f = parseNumericValue(e.parameter.f);
+      const kcal = parseNumericValue(e.parameter.kcal);
+      
+      podaciSheet.appendRow([date, name, qty, p, c, f, kcal]);
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Uspješno dodano u tablicu!",
+        row: [date, name, qty, p, c, f, kcal]
+      })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: err.toString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   const data = getCalorieReportData();
   const html = buildHtmlDashboard(data);
   return HtmlService.createHtmlOutput(html)
