@@ -173,9 +173,9 @@ def generate_html(data):
         <div class="text-xs text-[var(--text-muted)] bg-[var(--card-bg)] px-3 py-2 rounded-lg border border-[var(--border)]">
           Zadnje ažurirano: <span id="syncTime" class="text-[var(--text)] font-medium">{data['generated_at']}</span>
         </div>
-        <button onclick="refreshData()" class="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition active:scale-95 shadow-sm shadow-sky-600/30">
+        <button onclick="refreshData(this)" id="refreshBtn" class="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition active:scale-95 shadow-sm shadow-sky-600/30">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          Osvježi Podatke
+          <span id="refreshBtnText">Osvježi Prikaz</span>
         </button>
 
       </div>
@@ -839,20 +839,12 @@ def generate_html(data):
       }});
     }}
 
-    function refreshData() {{
-      const btn = event.target.closest("button");
-      if (btn) btn.innerHTML = "<span class=\"animate-spin inline-block mr-1\">↻</span> Učitavam...";
+    function refreshData(btn) {{
+      const text = document.getElementById("refreshBtnText");
+      if (text) text.innerText = "Učitavam...";
       setTimeout(() => {{
-        location.reload();
+        window.location.reload();
       }}, 300);
-    }} else {{
-          alert('Google Sheets nije dozvolio izravni klijentski dohvat (CORS). Pokreni generate_report.py za novo generiranje.');
-        }}
-      }} catch (e) {{
-        alert('Napomena: Zbog ograničenja preglednika (CORS), za najnovije podatke pokreni skriptu: python generate_report.py');
-      }} finally {{
-        btn.innerHTML = originalText;
-      }}
     }}
 
     window.addEventListener('load', init);
