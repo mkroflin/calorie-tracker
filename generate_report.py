@@ -113,7 +113,7 @@ def build_dataset():
         "weekly": weekly_totals,
         "meals_by_date": meals_by_date,
         "top_foods": top_foods,
-        "spreadsheet_id": SPREADSHEET_ID
+        "updated": True
     }
 
 def generate_html(data):
@@ -177,10 +177,7 @@ def generate_html(data):
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           Osvježi Podatke
         </button>
-        <a href="https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit" target="_blank" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition">
-          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h10v2H7zm0 4h10v2H7zm0-8h10v2H7z"/></svg>
-          Google Sheet
-        </a>
+
       </div>
     </header>
 
@@ -383,7 +380,7 @@ def generate_html(data):
 
     <!-- Footer -->
     <footer class="pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between text-xs text-[var(--text-muted)] gap-2">
-      <div>Generator izvještaja za praćenje kalorija &bull; Google Sheets ID: <code class="text-slate-400">{SPREADSHEET_ID}</code></div>
+      <div>Izvještaj o Prehrani & Kalorijama &bull; Osobni Dashboard</div>
       <div>Optimizirano za hosting na GitHub Pages / Vercel / Netlify / lokalno</div>
     </footer>
 
@@ -842,20 +839,13 @@ def generate_html(data):
       }});
     }}
 
-    // Live refresh via browser fetch
-    async function refreshData() {{
-      const btn = event.target.closest('button');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span class="animate-spin inline-block mr-1">↻</span> Osvježavam...';
-      try {{
-        const totalUrl = 'https://docs.google.com/spreadsheets/d/' + reportData.spreadsheet_id + '/export?format=csv&gid={GID_TOTAL}';
-        const podaciUrl = 'https://docs.google.com/spreadsheets/d/' + reportData.spreadsheet_id + '/export?format=csv&gid={GID_PODACI}';
-        
-        const [totalRes, podaciRes] = await Promise.all([fetch(totalUrl), fetch(podaciUrl)]);
-        if (totalRes.ok && podaciRes.ok) {{
-          alert('Podaci uspješno povučeni izravno iz Google tablice! Ponovno učitavam prikaz...');
-          location.reload();
-        }} else {{
+    function refreshData() {{
+      const btn = event.target.closest("button");
+      if (btn) btn.innerHTML = "<span class=\"animate-spin inline-block mr-1\">↻</span> Učitavam...";
+      setTimeout(() => {{
+        location.reload();
+      }}, 300);
+    }} else {{
           alert('Google Sheets nije dozvolio izravni klijentski dohvat (CORS). Pokreni generate_report.py za novo generiranje.');
         }}
       }} catch (e) {{
