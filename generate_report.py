@@ -839,12 +839,153 @@ def generate_html(data):
       }});
     }}
 
-    function refreshData(btn) {{
+    function parseClientCSV(text) {{
+      const clean = text.replaceAll(String.fromCharCode(13), "");
+      const lines = clean.split(String.fromCharCode(10));
+      const rows = [];
+      for (let i = 0; i < lines.length; i++) {{
+        const line = lines[i];
+        if (!line.trim()) continue;
+        const row = [];
+        let inQuotes = false;
+        let cur = "";
+        for (let j = 0; j < line.length; j++) {{
+          const c = line[j];
+          if (c === String.fromCharCode(34)) {{
+            inQuotes = !inQuotes;
+          }} else if (c === "," && !inQuotes) {{
+            row.push(cur.trim());
+            cur = "";
+          }} else {{
+            cur += c;
+          }}
+        }}
+        row.push(cur.trim());
+        rows.push(row);
+      }}
+      return rows;
+    }}
+
+    function parseClientNum(v) {{
+      if (!v) return 0;
+      let s = String(v).trim().replaceAll(" ", "");
+      if (s.includes("#")) return 0;
+      if (s.includes(",") && s.includes(".")) s = s.replaceAll(".", "").replaceAll(",", ".");
+      else if (s.includes(",")) s = s.replaceAll(",", ".");
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : Math.round(n * 100) / 100;
+    }}
+
+    async function refreshData(btn) {{
       const text = document.getElementById("refreshBtnText");
-      if (text) text.innerText = "Učitavam...";
-      setTimeout(() => {{
-        window.location.reload();
-      }}, 300);
+      if (text) text.innerText = "Dohvaćam...";
+      
+      try {{
+        const ts = Date.now();
+        const totalUrl = "https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_TOTAL}&t=" + ts;
+        const podaciUrl = "https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_PODACI}&t=" + ts;
+        
+        const [resTotal, resPodaci] = await Promise.all([
+          fetch(totalUrl),
+          fetch(podaciUrl)
+        ]);
+        
+        if (!resTotal.ok || !resPodaci.ok) throw new Error("Neuspješan dohvat tablice");
+        
+        const [totalText, podaciText] = await Promise.all([
+          resTotal.text(),
+          resPodaci.text()
+        ]);
+        
+        const totalRows = parseClientCSV(totalText);
+        const podaciRows = parseClientCSV(podaciText);
+        
+        const newDaily = [];
+        const newWeekly = [];
+        
+        for (let i = 1; i < totalRows.length; i++) {{
+          const r = totalRows[i];
+          if (!r || r.length === 0 || !r[0].trim()) continue;
+          const kcal = parseClientNum(r[4]);
+          if (kcal > 0) {{
+            newDaily.push({{
+              date: r[0].trim(),
+              p: parseClientNum(r[1]),
+              c: parseClientNum(r[2]),
+              f: parseClientNum(r[3]),
+              kcal: kcal,
+              active: parseClientNum(r[5]),
+              net: parseClientNum(r[6])
+            }});
+          }}
+          if (r.length > 13 && r[9] && r[9].trim() && r[13] && r[13].trim() !== "0") {{
+            newWeekly.push({{
+              week: r[9].trim(),
+              p: parseClientNum(r[10]),
+              c: parseClientNum(r[11]),
+              f: parseClientNum(r[12]),
+              kcal: parseClientNum(r[13]),
+              active: parseClientNum(r[14]),
+              net: parseClientNum(r[15])
+            }});
+          }}
+        }}
+        
+        const newMealsByDate = {{}};
+        const newFoodStats = {{}};
+        
+        for (let j = 1; j < podaciRows.length; j++) {{
+          const r = podaciRows[j];
+          if (!r || r.length === 0 || !r[0].trim()) continue;
+          const date = r[0].trim();
+          const name = r[1] ? r[1].trim() : "";
+          const qty = r[2] ? r[2].trim() : "";
+          const p = parseClientNum(r[3]);
+          const c = parseClientNum(r[4]);
+          const f = parseClientNum(r[5]);
+          const kcal = parseClientNum(r[6]);
+          
+          if (!newMealsByDate[date]) newMealsByDate[date] = [];
+          newMealsByDate[date].push({{ name, qty, p, c, f, kcal }});
+          
+          if (name) {{
+            if (!newFoodStats[name]) newFoodStats[name] = {{ count: 0, total_kcal: 0, total_p: 0 }};
+            newFoodStats[name].count++;
+            newFoodStats[name].total_kcal += kcal;
+            newFoodStats[name].total_p += p;
+          }}
+        }}
+        
+        const newTopFoods = Object.keys(newFoodStats).map(k => ({{
+          name: k,
+          count: newFoodStats[k].count,
+          total_kcal: Math.round(newFoodStats[k].total_kcal * 10) / 10,
+          total_p: Math.round(newFoodStats[k].total_p * 10) / 10
+        }})).sort((a, b) => b.count - a.count);
+        
+        const now = new Date();
+        const timeStr = now.toLocaleDateString("hr-HR") + " " + String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+        
+        reportData = {{
+          generated_at: timeStr,
+          daily: newDaily,
+          weekly: newWeekly,
+          meals_by_date: newMealsByDate,
+          top_foods: newTopFoods
+        }};
+        
+        document.getElementById("syncTime").innerText = timeStr;
+        applyFilter(currentFilter);
+        renderWeeklyChart();
+        renderTopFoods();
+        
+        if (text) text.innerText = "Ažurirano!";
+        setTimeout(() => {{ if (text) text.innerText = "Osvježi Podatke"; }}, 1500);
+      }} catch (err) {{
+        console.error("Greška pri live osvježavanju:", err);
+        if (text) text.innerText = "Osvježavam...";
+        setTimeout(() => {{ window.location.reload(); }}, 400);
+      }}
     }}
 
     window.addEventListener('load', init);
