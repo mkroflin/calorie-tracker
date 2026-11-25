@@ -181,6 +181,82 @@ def generate_html(data):
       </div>
     </header>
 
+    <!-- TODAY OVERVIEW SECTION (Prvo što vidiš na vrhu) -->
+    <section class="bg-gradient-to-br from-slate-900 to-[var(--card-bg)] p-4 sm:p-5 rounded-2xl border-2 border-purple-500/30 shadow-lg shadow-purple-900/10 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 tracking-wide uppercase" id="todayBadge">
+            DANAŠNJI UNOS
+          </span>
+          <span class="text-lg sm:text-xl font-black text-white" id="todayDateText">-</span>
+          <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-mono font-medium" id="todayMealsCountBadge">0 stavki</span>
+        </div>
+        
+        <div class="flex items-baseline gap-2">
+          <span class="text-xs text-[var(--text-muted)] font-medium">Ukupno uneseno:</span>
+          <span class="text-2xl sm:text-3xl font-black text-purple-400 font-mono tracking-tight" id="todayTotalKcal">-</span>
+        </div>
+      </div>
+
+      <!-- Today Macro Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-rose-500/20">
+          <div class="text-[11px] font-medium text-rose-400 flex items-center justify-between">
+            <span>Proteini</span>
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          </div>
+          <div class="text-xl font-black text-white mt-1 font-mono" id="todayProtein">-</div>
+          <div class="text-[10px] text-slate-400 mt-0.5" id="todayProteinPct">-</div>
+        </div>
+
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-sky-500/20">
+          <div class="text-[11px] font-medium text-sky-400 flex items-center justify-between">
+            <span>Ugljikohidrati</span>
+            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+          </div>
+          <div class="text-xl font-black text-white mt-1 font-mono" id="todayCarbs">-</div>
+          <div class="text-[10px] text-slate-400 mt-0.5" id="todayCarbsPct">-</div>
+        </div>
+
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-amber-500/20">
+          <div class="text-[11px] font-medium text-amber-400 flex items-center justify-between">
+            <span>Masti</span>
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          </div>
+          <div class="text-xl font-black text-white mt-1 font-mono" id="todayFats">-</div>
+          <div class="text-[10px] text-slate-400 mt-0.5" id="todayFatsPct">-</div>
+        </div>
+
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-indigo-500/20">
+          <div class="text-[11px] font-medium text-indigo-400 flex items-center justify-between">
+            <span>Neto kalorije</span>
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          </div>
+          <div class="text-xl font-black text-white mt-1 font-mono" id="todayNet">-</div>
+          <div class="text-[10px] text-slate-400 mt-0.5" id="todayNetSubtitle">Nakon potrošnje</div>
+        </div>
+      </div>
+
+      <!-- Today Meals List -->
+      <div class="space-y-2 pt-1">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <span>🍽️</span> Pojedeno na ovaj datum
+          </span>
+          <span class="text-[11px] text-[var(--text-muted)]">Popis iz taba 'Podaci'</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" id="todayMealsGrid">
+          <!-- Popunjeno kroz JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION DIVIDER -->
+    <div class="pt-3 flex items-center gap-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Povijest & Dugoročni Trendovi</span>
+      <div class="flex-1 h-px bg-[var(--border)]"></div>
+    </div>
+
     <!-- Filters & Range Bar -->
     <div class="flex flex-wrap items-center justify-between gap-4 bg-[var(--card-bg)] p-3.5 rounded-xl border border-[var(--border)]">
       <div class="flex items-center gap-2">
@@ -393,7 +469,87 @@ def generate_html(data):
     let filteredDaily = [...reportData.daily];
     let selectedDate = null;
 
+    function renderTodaySection() {{
+      const now = new Date();
+      const todayStr = now.getDate() + "." + (now.getMonth() + 1) + "." + now.getFullYear() + ".";
+      
+      let dayObj = reportData.daily.find(d => d.date === todayStr);
+      let isToday = true;
+      if (!dayObj && reportData.daily.length > 0) {{
+        dayObj = reportData.daily[reportData.daily.length - 1];
+        isToday = false;
+      }}
+      
+      if (!dayObj) return;
+      
+      const targetDate = dayObj.date;
+      const meals = reportData.meals_by_date[targetDate] || [];
+      
+      const badgeEl = document.getElementById("todayBadge");
+      if (badgeEl) badgeEl.innerText = isToday ? "DANAŠNJI UNOS" : "ZADNJI UNOS";
+      
+      const dateEl = document.getElementById("todayDateText");
+      if (dateEl) dateEl.innerText = targetDate;
+      
+      const countEl = document.getElementById("todayMealsCountBadge");
+      if (countEl) countEl.innerText = meals.length + " stavki";
+      
+      const kcalEl = document.getElementById("todayTotalKcal");
+      if (kcalEl) kcalEl.innerText = dayObj.kcal.toLocaleString("hr-HR") + " kcal";
+      
+      const kcalP = dayObj.p * 4;
+      const kcalC = dayObj.c * 4;
+      const kcalF = dayObj.f * 9;
+      const totalKcal = kcalP + kcalC + kcalF || 1;
+      
+      const pEl = document.getElementById("todayProtein");
+      if (pEl) pEl.innerText = dayObj.p + " g";
+      const pPctEl = document.getElementById("todayProteinPct");
+      if (pPctEl) pPctEl.innerText = Math.round((kcalP / totalKcal) * 100) + "% kalorija";
+      
+      const cEl = document.getElementById("todayCarbs");
+      if (cEl) cEl.innerText = dayObj.c + " g";
+      const cPctEl = document.getElementById("todayCarbsPct");
+      if (cPctEl) cPctEl.innerText = Math.round((kcalC / totalKcal) * 100) + "% kalorija";
+      
+      const fEl = document.getElementById("todayFats");
+      if (fEl) fEl.innerText = dayObj.f + " g";
+      const fPctEl = document.getElementById("todayFatsPct");
+      if (fPctEl) fPctEl.innerText = Math.round((kcalF / totalKcal) * 100) + "% kalorija";
+      
+      const netEl = document.getElementById("todayNet");
+      const netSubEl = document.getElementById("todayNetSubtitle");
+      if (dayObj.active > 0) {{
+        if (netEl) netEl.innerText = dayObj.net.toLocaleString("hr-HR") + " kcal";
+        if (netSubEl) netSubEl.innerText = "Aktivne: -" + dayObj.active + " kcal";
+      }} else {{
+        if (netEl) netEl.innerText = dayObj.kcal.toLocaleString("hr-HR") + " kcal";
+        if (netSubEl) netSubEl.innerText = "Bez unosa potrošnje";
+      }}
+      
+      const grid = document.getElementById("todayMealsGrid");
+      if (grid) {{
+        if (meals.length === 0) {{
+          grid.innerHTML = '<div class="col-span-full text-xs text-[var(--text-muted)] py-3 text-center">Nema unesenih pojedinačnih stavki.</div>';
+        }} else {{
+          grid.innerHTML = meals.map(m => `
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 flex items-center justify-between gap-2 hover:border-slate-500 transition">
+              <div>
+                <div class="font-medium text-xs text-slate-100">${{m.name}}</div>
+                <div class="text-[10px] text-slate-400">Količina: <span class="font-mono text-sky-400 font-semibold">${{m.qty}}</span></div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold font-mono text-xs text-purple-400">${{m.kcal}} kcal</div>
+                <div class="text-[9px] text-slate-400 font-mono">P:${{m.p}} &bull; C:${{m.c}} &bull; F:${{m.f}}</div>
+              </div>
+            </div>
+          `).join("");
+        }}
+      }}
+    }}
+
     function init() {{
+      renderTodaySection();
       applyFilter('all');
       renderWeeklyChart();
       renderTopFoods();
